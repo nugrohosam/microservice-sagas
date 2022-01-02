@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  message-broker:
+    image: nats
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+  order:
+    build: ./order 
+    depends_on:
+      - message-broker
+    links:
+      - message-broker
+  customer:
+    build: ./customer 
+    depends_on:
+      - message-broker
+    links:
+      - message-broker
+  test:
+    image: alpine:3.14
+    entrypoint: "curl -x POST order:8000"
+    depends_on:
+      - message-broker
+      - order
+      - customer
+    links:
+      - message-broker
+      - order
+      - customer
+volumes:
+  logvolume01: {}
