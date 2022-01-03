@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  message-broker:
+  nats:
     image: nats
     ports:
       - "4222:4222"
@@ -9,24 +9,24 @@ services:
   order:
     build: ./order 
     depends_on:
-      - message-broker
+      - nats
     links:
-      - message-broker
+      - nats
   customer:
     build: ./customer 
     depends_on:
-      - message-broker
+      - nats
     links:
-      - message-broker
+      - nats
   test:
-    image: alpine:3.14
-    entrypoint: "curl -x POST order:8000"
+    build: ./test-app
+    entrypoint: "npm test"
     depends_on:
-      - message-broker
+      - nats
       - order
       - customer
     links:
-      - message-broker
+      - nats
       - order
       - customer
 volumes:

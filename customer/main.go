@@ -4,15 +4,19 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/nugrohosam/go-microservice-sagas/customer/publisher"
 	"github.com/nugrohosam/go-microservice-sagas/customer/subscriber"
 	"gopkg.in/yaml.v2"
 )
 
 type event struct {
-	Order []string `yaml:"order"`
+	Order    []string `yaml:"order"`
+	Customer []string `yaml:"customer"`
 }
 
 func (c *event) getEvent() *event {
@@ -31,16 +35,18 @@ func (c *event) getEvent() *event {
 }
 
 func doCallbackFunc() {
+	urlNats := "nats://" + os.Getenv("HOST_NATS")
 	currentRand := rand.Intn(10)
 	isTrue := (currentRand % 2) == 0
-	if isTrue {
-		publisher.Pub("order-create", "true")
-	} else {
-		publisher.Pub("order-create", "false")
-	}
+	publisher.Pub("customer-check-limit", strconv.FormatBool(isTrue), urlNats)
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	app := fiber.New()
 
 	currentEvent := event{}
@@ -51,7 +57,9 @@ func main() {
 		dataEvents[index] = subscriber.DataSub{data, doCallbackFunc}
 	}
 
-	subscriber.Subs(dataEvents)
+	urlNats := "nats://" + os.Getenv("HOST_NATS")
+	subscriber.Subs(dataEvents, urlNats)
 
-	app.Listen(":3000")
+	port := ":" + os.Getenv("PORT")
+	app.Listen(port)
 }

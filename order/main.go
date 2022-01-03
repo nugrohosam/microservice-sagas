@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/nugrohosam/go-microservice-sagas/order/publisher"
 	"github.com/nugrohosam/go-microservice-sagas/order/subscriber"
 	"gopkg.in/yaml.v2"
 )
 
 type event struct {
+	Order    []string `yaml:"order"`
 	Customer []string `yaml:"customer"`
 }
 
@@ -41,6 +44,11 @@ func doCallbackFunc(isComplete bool) int {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	app := fiber.New()
 
 	currentEvent := event{}
@@ -52,12 +60,14 @@ func main() {
 		dataEvents[index] = subscriber.DataSub{item, doCallbackFunc}
 	}
 
-	subscriber.Subs(dataEvents)
+	urlNats := "nats://" + os.Getenv("HOST_NATS")
+	subscriber.Subs(dataEvents, urlNats)
 
 	app.Post("/", func(c *fiber.Ctx) error {
-		publisher.Pub("customer-event")
+		publisher.Pub("order-create", urlNats)
 		return c.SendString("Process order")
 	})
 
-	app.Listen(":3000")
+	port := ":" + os.Getenv("PORT")
+	app.Listen(port)
 }
