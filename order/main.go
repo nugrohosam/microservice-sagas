@@ -35,9 +35,9 @@ func (c *event) getEvent() *event {
 
 func doCallbackFunc(isComplete bool) int {
 	if isComplete {
-		fmt.Println("Complete jokes")
+		fmt.Println("Limit avail")
 	} else {
-		fmt.Println("Non complete jokes")
+		fmt.Println("Limit not avail")
 	}
 
 	return 0
